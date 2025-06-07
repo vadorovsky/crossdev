@@ -270,7 +270,7 @@ parse_target() {
 			KPKG="[none]"
 			LCAT="dev-embedded"
 			LPKG="avr-libc"
-			GUSE+=" -fortran -go" # doesn't work
+			GUSE+=" -openmp -fortran -go" # doesn't work
 			MULTILIB_USE="yes" #377039
 			BUSE+=" cxx"
 			WITH_DEF_HEADERS="no"
