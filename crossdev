@@ -1106,7 +1106,7 @@ show_target_cfg() {
 setup_portage_vars
 if [[ -z ${CROSSDEV_OVERLAY} ]] ; then
 	eerror "You need to specify an output overlay.  Please use --ov-output, or consult"
-	eerror "https://wiki.gentoo.org/wiki/Custom_repository for more details."
+	eerror "https://wiki.gentoo.org/wiki/Crossdev#Crossdev_overlay for more details."
 	exit 1
 fi
 
