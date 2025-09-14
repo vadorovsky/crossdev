@@ -6,6 +6,7 @@ print_help() {
 	echo "Usage: $0 [OPTIONS]
 
 Options:
+  --llvm                Use LLVM/Clang as a cross compiler
   --skip-system         Skip emerging the @system set after setting up crossdev.
   --tag <tag>           Specify the container tag to use. Default is 'latest'.
   --target <target>     Specify the target architecture for crossdev. Required.
@@ -54,6 +55,7 @@ CONTAINER_NAME=${CONTAINER_NAME:-"crossdev"}
 CONTAINER_URI=${CONTAINER_URI:-"docker.io/gentoo/stage3"}
 CONTAINER_TAG="latest"
 EMERGE_SYSTEM=1
+USE_LLVM=0
 TOPDIR=$(git rev-parse --show-toplevel)
 
 remove_container || true
@@ -64,6 +66,10 @@ while [[ $# -gt 0 ]]; do
 		-h|--help)
 			print_help
 			exit 0
+			;;
+		--llvm)
+			USE_LLVM=1
+			shift 1
 			;;
 		--skip-system)
 			EMERGE_SYSTEM=0
@@ -85,6 +91,11 @@ while [[ $# -gt 0 ]]; do
 	esac
 done
 
+EXTRA_ARGS=()
+if [[ "${USE_LLVM}" -eq 1 ]]; then
+	EXTRA_ARGS+="--llvm"
+fi
+
 "${CONTAINER_ENGINE}" run -d \
 	--pull always \
 	--name "${CONTAINER_NAME}" \
@@ -98,7 +109,7 @@ run_in_container getuto
 run_in_container emerge --getbinpkg app-eselect/eselect-repository sys-apps/config-site
 run_in_container make install
 run_in_container eselect repository create crossdev
-run_in_container crossdev --show-fail-log --target "${TARGET}"
+run_in_container crossdev --show-fail-log "${EXTRA_ARGS[@]}" --target "${TARGET}"
 if [[ "${EMERGE_SYSTEM}" -eq 1 ]]; then
 	run_in_container "${TARGET}-emerge" @system
 fi
