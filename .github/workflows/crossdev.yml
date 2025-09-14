@@ -22,63 +22,147 @@ jobs:
         # requests fixing them welcome!
         target:
           - target: aarch64-unknown-linux-gnu
+            gcc: true
+            llvm: false
           - target: aarch64-unknown-linux-musl
+            gcc: true
+            llvm: true
           - target: aarch64_be-unknown-linux-gnu
+            gcc: true
+            llvm: false
           - target: alpha-unknown-linux-gnu
+            gcc: true
+            llvm: false
           - target: arm-unknown-linux-gnueabi
+            gcc: true
+            llvm: false
           - target: arm-unknown-linux-gnueabihf
+            gcc: true
+            llvm: false
           - target: arm-unknown-linux-musleabi
+            gcc: true
+            llvm: false
           - target: arm-unknown-linux-musleabihf
+            gcc: true
+            llvm: false
           - target: armeb-unknown-linux-gnueabi
+            gcc: true
+            llvm: false
           - target: armeb-unknown-linux-gnueabihf
+            gcc: true
+            llvm: false
           - target: armeb-unknown-linux-musleabi
+            gcc: true
+            llvm: false
           - target: armeb-unknown-linux-musleabihf
+            gcc: true
+            llvm: false
           - target: armv7-unknown-linux-musleabi
+            gcc: true
+            llvm: false
           - target: armv7-unknown-linux-musleabihf
+            gcc: true
+            llvm: false
           - target: armv6j-softfp-linux-gnueabi
+            gcc: true
+            llvm: false
           - target: armv6j-unknown-linux-gnueabihf
+            gcc: true
+            llvm: false
           - target: armv7a-softfp-linux-gnueabi
+            gcc: true
+            llvm: false
           - target: armv7a-unknown-linux-gnueabihf
+            gcc: true
+            llvm: false
           - target: hppa1.1-unknown-linux-gnu
+            gcc: true
+            llvm: false
           - target: hppa2.0-unknown-linux-gnu
+            gcc: true
+            llvm: false
           - target: hppa64-unknown-linux-gnu
             args: --skip-system
+            gcc: true
+            llvm: false
           - target: loongarch64-unknown-linux-gnu
+            gcc: true
+            llvm: false
           # musl ebuilds don't support loong. The target is supported upstream,
           # we need to fix and test our ebuilds.
           #- target: loongarch64-unknown-linux-musl
           - target: m68k-unknown-linux-gnu
+            gcc: true
+            llvm: false
           - target: mips-unknown-linux-gnu
+            gcc: true
+            llvm: false
           - target: mips-unknown-linux-musl
+            gcc: true
+            llvm: false
           - target: mipsel-unknown-linux-gnu
+            gcc: true
+            llvm: false
           - target: mipsel-unknown-linux-musl
+            gcc: true
+            llvm: false
           - target: mips64-unknown-linux-gnu
+            gcc: true
+            llvm: false
           # libgcc_s.so fails to build: `cannot find crti.o: No such file or
           # directory`.
           # - target: mips64-unknown-linux-musl
           - target: mips64el-unknown-linux-gnu
+            gcc: true
+            llvm: false
           # libgcc_s.so fails to build: `cannot find crti.o: No such file or
           # directory`.
           # - target: mips64el-unknown-linux-musl
           - target: or1k-unknown-linux-gnu
             args: --skip-system
+            gcc: true
+            llvm: false
           - target: or1k-unknown-linux-musl
             args: --skip-system
+            gcc: true
+            llvm: false
           - target: powerpc-unknown-linux-gnu
+            gcc: true
+            llvm: false
           - target: powerpc-unknown-linux-musl
+            gcc: true
+            llvm: false
           - target: powerpc64-unknown-linux-gnu
+            gcc: true
+            llvm: false
           - target: powerpc64-unknown-linux-musl
+            gcc: true
+            llvm: false
           - target: powerpc64le-unknown-linux-gnu
+            gcc: true
+            llvm: false
           - target: riscv32-unknown-linux-gnu
+            gcc: true
+            llvm: false
           # busybox fails to build: `‘SYS_settimeofday’ undeclared`.
           # - target: riscv32-unknown-linux-musl
           - target: riscv64-unknown-linux-gnu
+            gcc: true
+            llvm: false
           - target: riscv64-unknown-linux-musl
+            gcc: true
+            llvm: true
           # glibc fails to build: `no support for pre-v8 sparc`.
           # - target: sparc-unknown-linux-gnu
           - target: sparc64-unknown-linux-gnu
+            gcc: true
+            llvm: false
           - target: s390-ibm-linux-gnu
+            gcc: true
+            llvm: false
           - target: s390x-ibm-linux-gnu
+            gcc: true
+            llvm: false
           # musl ebuilds don't support s390x. The target is supported upstream,
           # we need to fix and test our ebuilds.
           # - target: s390x-unknown-linux-musl
@@ -93,30 +177,58 @@ jobs:
           # - target: sh4eb-unknown-linux-gnu
           # - target: sh4eb-unknown-linux-musl
           - target: x86_64-unknown-linux-gnu
+            gcc: true
+            llvm: false
           - target: x86_64-unknown-linux-musl
+            gcc: true
+            llvm: true
           # Embedded or otherwise special targets
           - target: arm-none-eabi
             args: --skip-system
+            gcc: true
+            llvm: false
           - target: avr
             args: --skip-system
+            gcc: true
+            llvm: false
           - target: nvptx-none
             args: --skip-system
+            gcc: true
+            llvm: false
           - target: bpf-unknown-none
             args: --skip-system
+            gcc: true
+            llvm: false
         stage3:
-          - latest # `openrc` (glibc+GCC) is tagged as `latest`
-          - musl
+          - latest # glibc+GCC
+          - llvm # glibc+LLVM and GCC as a fallback
+          - musl # musl+GCC
       fail-fast: false
     name: crossdev target=${{ matrix.target.target }} stage3=${{ matrix.stage3 }}
+    env:
+      CONTAINER_ENGINE: docker
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create cross environment
-        env:
-          CONTAINER_ENGINE: docker
+      - name: Create cross environment with GCC
+        # Building GCC-based sysroots on llvm stage3 should be possible, since
+        # it contains a fallback GCC toolchain. But in practice, it fails for
+        # certain architectures. Pull requests welcome!
+        if: ${{ matrix.target.gcc && !contains(matrix.stage3, 'llvm') }}
         run: |
           ./scripts/container_test.sh \
+            --tag ${{ matrix.stage3 }} \
+            --target ${{ matrix.target.target }} \
+            ${{ matrix.target.args }}
+
+      - name: Create cross environment with LLVM
+        # * We need LLVM toolchain to be present in the stage3.
+        # * Building sysroots with glibc and LLVM is not yet supported.
+        if: ${{ matrix.target.llvm && contains(matrix.stage3, 'llvm') }}
+        run: |
+          ./scripts/container_test.sh \
+            --llvm \
             --tag ${{ matrix.stage3 }} \
             --target ${{ matrix.target.target }} \
             ${{ matrix.target.args }}
