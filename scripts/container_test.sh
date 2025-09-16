@@ -86,6 +86,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 "${CONTAINER_ENGINE}" run -d \
+	--pull always \
 	--name "${CONTAINER_NAME}" \
 	-v "${TOPDIR}:/workspace" \
 	-w /workspace \
